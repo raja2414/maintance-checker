@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Society Maintenance Checker</title>
+    <style>
+        :root {
+            --primary: #1b4332;
+            --primary-light: #2d6a4f;
+            --accent: #52b788;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #212529;
+            --border: #ced4da;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-top: 20px;
+        }
+        h2 { color: var(--primary); margin-top: 0; text-align: center; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        select, .search-container {
+            flex: 1;
+        }
+        select {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+        .search-wrapper {
+            position: relative;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        .autocomplete-item:hover {
+            background-color: #e9f5ed;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        #loading {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            margin: 20px 0;
+        }
+        .result-card {
+            background: #f8f9fa;
+            border-left: 5px solid var(--accent);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 20px;
+            display: none;
+        }
+        .result-card h3 { margin: 0 0 15px 0; color: var(--primary); }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .stat-box {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .stat-label { font-size: 13px; color: #6c757d; margin-bottom: 4px; }
+        .stat-value { font-size: 18px; font-weight: bold; color: var(--text); }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-owner { background: #e2ece9; color: var(--primary); }
+        .badge-rented { background: #fff3cd; color: #856404; }
+        .table-responsive { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; }
+        th, td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: center; }
+        th { background: #e9ecef; color: #495057; }
+        td.paid { background-color: #d4edda; color: #155724; font-weight: 500; }
+        td.unpaid { background-color: #f8d7da; color: #721c24; }
+        td.future { background-color: #f1f3f5; color: #adb5bd; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Pushpvihar Society Maintenance</h2>
+    
+    <div class="controls">
+        <select id="yearSelect" onchange="loadSheetData()">
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+        </select>
+        <div class="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Search by House No or Name..." oninput="filterRecords()" autocomplete="off">
+                <div id="autocompleteList" class="autocomplete-list" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading">Loading records from Google Sheet...</div>
+
+    <div id="resultCard" class="result-card">
+        <h3 id="resTitle"></h3>
+        <div style="margin-bottom: 12px;">
+            <span id="resBadge" class="badge"></span>
+        </div>
+        <div class="stat-grid">
+            Last Paid Up To: <div class="stat-box">
+                <div class="stat-label">Last Paid Month</div>
+                <div class="stat-value" id="resLastPaid">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Remaining Balance (Till Date)</div>
+                <div class="stat-value" id="resRemaining" style="color: #d90429;">₹0</div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th>
+                        <th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+                    </tr>
+                </thead>
+                <tbody id="resMonthTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WEB_APP_URL = 'YOUR_WEB_APP_URL_HERE'; // Replace with your Apps Script Web App URL
+    let allRecords = [];
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    window.onload = function() {
+        // Set year dropdown to current year if available
+        const currentYear = new Date().getFullYear().toString();
+        const yearSelect = document.getElementById('yearSelect');
+        for (let opt of yearSelect.options) {
+            if (opt.value === currentYear) {
+                yearSelect.value = currentYear;
+                break;
+            }
+        }
+        loadSheetData();
+    };
+
+    async function loadSheetData() {
+        const year = document.getElementById('yearSelect').value;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+
+        try {
+            const response = await fetch(`${WEB_APP_URL}?year=${year}`);
+            const data = await response.json();
+            allRecords = data.records;
+            document.getElementById('loading').style.display = 'none';
+        } catch (e) {
+            console.error(e);
+            document.getElementById('loading').innerText = 'Failed to load data from Google Sheet.';
+        }
+    }
+
+    function filterRecords() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const listDiv = document.getElementById('autocompleteList');
+        listDiv.innerHTML = '';
+
+        if (!query) {
+            listDiv.style.display = 'none';
+            return;
+        }
+
+        const filtered = allRecords.filter(r => 
+            String(r.houseNo).toLowerCase().includes(query) || 
+            r.name.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+            listDiv.style.display = 'none';
+            return;
+        }
+
+        filtered.forEach(record => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.innerText = `${record.houseNo} - ${record.name}`;
+            div.onclick = () => selectRecord(record);
+            listDiv.appendChild(div);
+        });
+
+        listDiv.style.display = 'block';
+    }
+
+    function selectRecord(record) {
+        document.getElementById('searchInput').value = `${record.houseNo} - ${record.name}`;
+        document.getElementById('autocompleteList').style.display = 'none';
+        displayRecordDetails(record);
+    }
+
+    function displayRecordDetails(record) {
+        document.getElementById('resultCard').style.display = 'block';
+        document.getElementById('resTitle').innerText = `House #${record.houseNo} — ${record.name}`;
+
+        const badge = document.getElementById('resBadge');
+        if (record.isRented) {
+            badge.className = 'badge badge-rented';
+            badge.innerText = 'Rented Home (₹150/mo)';
+        } else {
+            badge.className = 'badge badge-owner';
+            badge.innerText = 'Owner (₹100/mo)';
+        }
+
+        const monthlyRate = record.isRented ? 150 : 100;
+        const selectedYear = parseInt(document.getElementById('yearSelect').value);
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonthIdx = currentDate.getMonth(); // 0 = Jan, 11 = Dec
+
+        let lastPaidMonth = 'None';
+        let totalRemaining = 0;
+        let tableRowHtml = '<tr>';
+
+        monthNames.forEach((m, idx) => {
+            const paidVal = record.months[m];
+            const isPaid = paidVal !== null && paidVal > 0;
+
+            // Determine if this month is in the past/present vs future for the selected year
+            let isPastOrCurrent = false;
+            if (selectedYear < currentYear) {
+                isPastOrCurrent = true;
+            } else if (selectedYear === currentYear) {
+                isPastOrCurrent = idx <= currentMonthIdx;
+            }
+
+            if (isPaid) {
+                lastPaidMonth = m;
+                tableRowHtml += `<td class="paid">₹${paidVal}</td>`;
+            } else {
+                if (isPastOrCurrent) {
+                    totalRemaining += monthlyRate;
+                    tableRowHtml += `<td class="unpaid">Due (₹${monthlyRate})</td>`;
+                } else {
+                    tableRowHtml += `<td class="future">-</td>`;
+                }
+            }
+        });
+        tableRowHtml += '</tr>';
+
+        document.getElementById('resLastPaid').innerText = lastPaidMonth;
+        document.getElementById('resRemaining').innerText = `₹${totalRemaining}`;
+        document.getElementById('resMonthTable').innerHTML = tableRowHtml;
+    }
+
+    // Close autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById('autocompleteList').style.display = 'none';
+        }
+    });
+</script>
+
+</body>
+</html>
