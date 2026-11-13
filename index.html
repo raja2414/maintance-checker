@@ -27,7 +27,7 @@
         }
         .container {
             width: 100%;
-            max-width: 650px;
+            max-width: 600px;
             background: var(--card-bg);
             padding: 30px;
             border-radius: 12px;
@@ -35,27 +35,13 @@
             margin-top: 20px;
         }
         h2 { color: var(--primary); margin-top: 0; text-align: center; }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        select, .search-container {
-            flex: 1;
-        }
-        select {
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 16px;
-            background: white;
-        }
-        .search-wrapper {
+        .search-container {
             position: relative;
+            margin-bottom: 25px;
         }
         input[type="text"] {
             width: 100%;
-            padding: 12px 15px;
+            padding: 14px 18px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 16px;
@@ -81,7 +67,7 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         .autocomplete-item {
-            padding: 12px 15px;
+            padding: 12px 18px;
             cursor: pointer;
             border-bottom: 1px solid #f1f3f5;
         }
@@ -98,27 +84,29 @@
         }
         .result-card {
             background: #f8f9fa;
-            border-left: 5px solid var(--accent);
-            padding: 20px;
-            border-radius: 0 8px 8px 0;
+            border-top: 4px solid var(--accent);
+            padding: 25px;
+            border-radius: 8px;
             margin-top: 20px;
             display: none;
         }
-        .result-card h3 { margin: 0 0 15px 0; color: var(--primary); }
-        .stat-grid {
+        .result-card h3 { margin: 0 0 15px 0; color: var(--primary); border-bottom: 1px solid #dee2e6; padding-bottom: 10px; }
+        .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-bottom: 15px;
         }
-        .stat-box {
+        .info-box {
             background: white;
-            padding: 12px 15px;
+            padding: 14px 16px;
             border-radius: 6px;
             border: 1px solid #e9ecef;
         }
-        .stat-label { font-size: 13px; color: #6c757d; margin-bottom: 4px; }
-        .stat-value { font-size: 18px; font-weight: bold; color: var(--text); }
+        .info-box.full-width {
+            grid-column: span 2;
+        }
+        .info-label { font-size: 13px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 18px; font-weight: 600; color: var(--text); }
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -126,15 +114,8 @@
             font-size: 12px;
             font-weight: 600;
         }
-        .badge-owner { background: #e2ece9; color: var(--primary); }
-        .badge-rented { background: #fff3cd; color: #856404; }
-        .table-responsive { overflow-x: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; }
-        th, td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: center; }
-        th { background: #e9ecef; color: #495057; }
-        td.paid { background-color: #d4edda; color: #155724; font-weight: 500; }
-        td.unpaid { background-color: #f8d7da; color: #721c24; }
-        td.future { background-color: #f1f3f5; color: #adb5bd; }
+        .badge-yes { background: #fff3cd; color: #856404; }
+        .badge-no { background: #d4edda; color: #155724; }
     </style>
 </head>
 <body>
@@ -142,77 +123,47 @@
 <div class="container">
     <h2>Pushpvihar Society Maintenance</h2>
     
-    <div class="controls">
-        <select id="yearSelect" onchange="loadSheetData()">
-            <option value="2026">2026</option>
-            <option value="2025">2025</option>
-        </select>
-        <div class="search-container">
-            <div class="search-wrapper">
-                <input type="text" id="searchInput" placeholder="Search by House No or Name..." oninput="filterRecords()" autocomplete="off">
-                <div id="autocompleteList" class="autocomplete-list" style="display: none;"></div>
-            </div>
-        </div>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search by House No or Name..." oninput="filterRecords()" autocomplete="off">
+        <div id="autocompleteList" class="autocomplete-list" style="display: none;"></div>
     </div>
 
     <div id="loading">Loading records from Google Sheet...</div>
 
     <div id="resultCard" class="result-card">
         <h3 id="resTitle"></h3>
-        <div style="margin-bottom: 12px;">
-            <span id="resBadge" class="badge"></span>
-        </div>
-        <div class="stat-grid">
-            Last Paid Up To: <div class="stat-box">
-                <div class="stat-label">Last Paid Month</div>
-                <div class="stat-value" id="resLastPaid">-</div>
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">Occupancy Type</div>
+                <div class="info-value" id="resIsRented">-</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Remaining Balance (Till Date)</div>
-                <div class="stat-value" id="resRemaining" style="color: #d90429;">₹0</div>
+            <div class="info-box">
+                <div class="info-label">Cleared Till</div>
+                <div class="info-value" id="resClearedTill" style="color: var(--primary-light);">-</div>
             </div>
-        </div>
-
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th>
-                        <th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
-                    </tr>
-                </thead>
-                <tbody id="resMonthTable"></tbody>
-            </table>
+            <div class="info-box">
+                <div class="info-label">Additional Charges</div>
+                <div class="info-value" id="resAdditional">₹0</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Amount Remaining</div>
+                <div class="info-value" id="resRemaining" style="color: #d90429;">₹0</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzqFVrqBNxt1ttQszvEVe_FGihfPbQHXDfnOjT91C9EhXm68QoivnXAgIA7oYKznP2L/exec'; // Replace with your Apps Script Web App URL
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzqFVrqBNxt1ttQszvEVe_FGihfPbQHXDfnOjT91C9EhXm68QoivnXAgIA7oYKznP2L/exec';  // Replace with your Apps Script Web App URL
     let allRecords = [];
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     window.onload = function() {
-        // Set year dropdown to current year if available
-        const currentYear = new Date().getFullYear().toString();
-        const yearSelect = document.getElementById('yearSelect');
-        for (let opt of yearSelect.options) {
-            if (opt.value === currentYear) {
-                yearSelect.value = currentYear;
-                break;
-            }
-        }
         loadSheetData();
     };
 
     async function loadSheetData() {
-        const year = document.getElementById('yearSelect').value;
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('resultCard').style.display = 'none';
-        document.getElementById('searchInput').value = '';
-
         try {
-            const response = await fetch(`${WEB_APP_URL}?year=${year}`);
+            const response = await fetch(WEB_APP_URL);
             const data = await response.json();
             allRecords = data.records;
             document.getElementById('loading').style.display = 'none';
@@ -245,6 +196,7 @@
         filtered.forEach(record => {
             const div = document.createElement('div');
             div.className = 'autocomplete-item';
+            // Display format: [house no] - [name]
             div.innerText = `${record.houseNo} - ${record.name}`;
             div.onclick = () => selectRecord(record);
             listDiv.appendChild(div);
@@ -263,57 +215,20 @@
         document.getElementById('resultCard').style.display = 'block';
         document.getElementById('resTitle').innerText = `House #${record.houseNo} — ${record.name}`;
 
-        const badge = document.getElementById('resBadge');
-        if (record.isRented) {
-            badge.className = 'badge badge-rented';
-            badge.innerText = 'Rented Home (₹150/mo)';
+        const rentedBox = document.getElementById('resIsRented');
+        const isRentedLower = String(record.isRented).toLowerCase();
+        if (isRentedLower === 'yes' || isRentedLower === 'true') {
+            rentedBox.innerHTML = `<span class="badge badge-yes">Rented</span>`;
         } else {
-            badge.className = 'badge badge-owner';
-            badge.innerText = 'Owner (₹100/mo)';
+            rentedBox.innerHTML = `<span class="badge badge-no">Owner</span>`;
         }
 
-        const monthlyRate = record.isRented ? 150 : 100;
-        const selectedYear = parseInt(document.getElementById('yearSelect').value);
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentMonthIdx = currentDate.getMonth(); // 0 = Jan, 11 = Dec
-
-        let lastPaidMonth = 'None';
-        let totalRemaining = 0;
-        let tableRowHtml = '<tr>';
-
-        monthNames.forEach((m, idx) => {
-            const paidVal = record.months[m];
-            const isPaid = paidVal !== null && paidVal > 0;
-
-            // Determine if this month is in the past/present vs future for the selected year
-            let isPastOrCurrent = false;
-            if (selectedYear < currentYear) {
-                isPastOrCurrent = true;
-            } else if (selectedYear === currentYear) {
-                isPastOrCurrent = idx <= currentMonthIdx;
-            }
-
-            if (isPaid) {
-                lastPaidMonth = m;
-                tableRowHtml += `<td class="paid">₹${paidVal}</td>`;
-            } else {
-                if (isPastOrCurrent) {
-                    totalRemaining += monthlyRate;
-                    tableRowHtml += `<td class="unpaid">Due (₹${monthlyRate})</td>`;
-                } else {
-                    tableRowHtml += `<td class="future">-</td>`;
-                }
-            }
-        });
-        tableRowHtml += '</tr>';
-
-        document.getElementById('resLastPaid').innerText = lastPaidMonth;
-        document.getElementById('resRemaining').innerText = `₹${totalRemaining}`;
-        document.getElementById('resMonthTable').innerHTML = tableRowHtml;
+        document.getElementById('resClearedTill').innerText = record.clearedTill;
+        document.getElementById('resAdditional').innerText = `₹${record.additionalCharges}`;
+        document.getElementById('resRemaining').innerText = `₹${record.amountRemaining}`;
     }
 
-    // Close autocomplete when clicking outside
+    // Close autocomplete dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.search-container')) {
             document.getElementById('autocompleteList').style.display = 'none';
