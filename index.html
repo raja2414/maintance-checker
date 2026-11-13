@@ -116,6 +116,9 @@
         }
         .badge-yes { background: #fff3cd; color: #856404; }
         .badge-no { background: #d4edda; color: #155724; }
+        .amount {
+            grid-column: span 2;
+        }
     </style>
 </head>
 <body>
@@ -141,9 +144,9 @@
                 <div class="info-label">Cleared Till</div>
                 <div class="info-value" id="resClearedTill" style="color: var(--primary-light);">-</div>
             </div>
-            <div class="info-box">
-                <div class="info-label">Amount Remaining</div>
-                <div class="info-value" id="resRemaining" style="color: #d90429;">₹0</div>
+            <div class="info-box amount">
+                <div class="info-label">Amount Status</div>
+                <div class="info-value" id="resRemaining">₹0</div>
             </div>
         </div>
     </div>
@@ -212,11 +215,23 @@
         document.getElementById('resTitle').innerText = `House #${record.houseNo} — ${record.name}`;
 
         const rentedBox = document.getElementById('resIsRented');
-        const isRentedLower = String(record.isRented).toLowerCase();
-        rentedBox.innerHTML = `<span class="badge badge-no">${String(record.isRented)}</span>`
+        rentedBox.innerHTML = `<span class="badge badge-no">${String(record.isRented)}</span>`;
 
         document.getElementById('resClearedTill').innerText = record.clearedTill;
-        document.getElementById('resRemaining').innerText = `₹${record.amountRemaining}`;
+
+        // Handling Amount Remaining vs Credit Available
+        const remainingVal = Number(record.amountRemaining);
+        const remainingEl = document.getElementById('resRemaining');
+
+        if (remainingVal < 0) {
+            // Negative amount: Display as Credit available in green without minus sign
+            remainingEl.style.color = '#2b8a3e'; // Green
+            remainingEl.innerText = `Credit Available: ₹${Math.abs(remainingVal)}`;
+        } else {
+            // Positive or Zero amount: Display as remaining/due amount in red
+            remainingEl.style.color = '#d90429'; // Red
+            remainingEl.innerText = `₹${remainingVal}`;
+        }
     }
 
     // Close autocomplete dropdown when clicking outside
