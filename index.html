@@ -142,10 +142,6 @@
                 <div class="info-value" id="resClearedTill" style="color: var(--primary-light);">-</div>
             </div>
             <div class="info-box">
-                <div class="info-label">Additional Charges</div>
-                <div class="info-value" id="resAdditional">₹0</div>
-            </div>
-            <div class="info-box">
                 <div class="info-label">Amount Remaining</div>
                 <div class="info-value" id="resRemaining" style="color: #d90429;">₹0</div>
             </div>
@@ -220,7 +216,6 @@
         rentedBox.innerHTML = `<span class="badge badge-no">${String(record.isRented)}</span>`
 
         document.getElementById('resClearedTill').innerText = record.clearedTill;
-        document.getElementById('resAdditional').innerText = `₹${record.additionalCharges}`;
         document.getElementById('resRemaining').innerText = `₹${record.amountRemaining}`;
     }
 
