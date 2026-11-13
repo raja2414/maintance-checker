@@ -217,11 +217,7 @@
 
         const rentedBox = document.getElementById('resIsRented');
         const isRentedLower = String(record.isRented).toLowerCase();
-        if (isRentedLower === 'yes' || isRentedLower === 'true') {
-            rentedBox.innerHTML = `<span class="badge badge-yes">Rented</span>`;
-        } else {
-            rentedBox.innerHTML = `<span class="badge badge-no">Owner</span>`;
-        }
+        rentedBox.innerHTML = `<span class="badge badge-no">${String(record.isRented)}</span>`
 
         document.getElementById('resClearedTill').innerText = record.clearedTill;
         document.getElementById('resAdditional').innerText = `₹${record.additionalCharges}`;
